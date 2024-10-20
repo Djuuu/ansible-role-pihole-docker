@@ -1,0 +1,54 @@
+---
+
+## Check
+
+- name: Check variables
+  ansible.builtin.assert:
+    that:
+      - pihole_container_hostname is defined
+
+## Init
+
+- name: Ensure project directories exist
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0755'
+  loop:
+    - "{{ docker_project_path }}"
+    - "{{ docker_project_path }}/etc-dnsmasq.d"
+  tags: ["init"]
+
+- name: Ensure project directories exist (999)
+  ansible.builtin.file:
+    path: "{{ item }}"
+    state: directory
+    mode: '0775'
+  loop:
+    - "{{ docker_project_path }}/etc-pihole"
+  tags: ["init"]
+
+## Configure
+
+- name: Configure pihole & dnsmasq
+  ansible.builtin.include_tasks: _configure.yml
+  loop:
+    - "config/pihole/all/etc-dnsmasq.d"
+    - "config/pihole/{{ inventory_hostname }}/etc-dnsmasq.d"
+    - "config/pihole/all/etc-pihole"
+    - "config/pihole/{{ inventory_hostname }}/etc-pihole"
+  loop_control:
+    loop_var: config_dir
+
+- name: Template docker-compose.yml
+  ansible.builtin.template:
+    src: docker-compose.yml.j2
+    dest: "{{ docker_project_path }}/docker-compose.yml"
+    mode: '0644'
+    validate: "{{ docker_cli }} compose -f %s config"
+    backup: true
+
+## Run
+
+- name: Start app
+  ansible.builtin.include_role: { name: djuuu.docker_project, tasks_from: compose-up }
