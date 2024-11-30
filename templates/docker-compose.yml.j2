@@ -8,7 +8,7 @@ services:
 
   pihole:
     container_name: {{ docker_project_slug }}
-    image: pihole/pihole:latest
+    image: pihole/pihole:{{ pihole_version }}
     hostname: {{ pihole_container_hostname }}
 
     restart: always

@@ -17,6 +17,9 @@ pihole_traefik_middlewares:
 
 # Pi-hole docker-compose variables
 
+# pihole/pihole image version
+pihole_version: latest
+
 # Docker default network MAC address
 # Useful when using macvlan network driver (configure network in `pihole_compose_additional_options`).
 # When not set, host networking mode will be used.
