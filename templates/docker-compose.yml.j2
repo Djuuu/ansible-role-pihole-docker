@@ -11,7 +11,7 @@ services:
     image: pihole/pihole:{{ pihole_version }}
     hostname: {{ pihole_container_hostname }}
 
-    restart: always
+    restart: unless-stopped
 
     {% if pihole_mac_address is defined and pihole_mac_address %}
     networks:
