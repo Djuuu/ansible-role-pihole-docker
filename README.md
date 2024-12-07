@@ -43,8 +43,6 @@ pihole_traefik_loadbalancer_server_port: 8081
 pihole_traefik_entrypoints: http,https
 pihole_traefik_middlewares:
   - "internal-access@file"
-  - "allow-frames@file"
-  - "{{ docker_project_slug }}-cors@docker"
 
 
 # Pi-hole docker-compose variables
