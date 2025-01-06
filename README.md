@@ -36,7 +36,7 @@ Available role variables are listed below, along with default values (see `defau
 
 pihole_project_name: pihole
 
-# Docker project dynamic vars (uses `docker_project_name` prefix, adapt if overriden)
+# Docker project dynamic vars (uses `docker_project_name` prefix, adapt if overridden)
 
 # Traefik options
 pihole_traefik_loadbalancer_server_port: 8081
