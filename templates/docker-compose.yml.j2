@@ -7,11 +7,10 @@ name: {{ docker_project_slug }}
 services:
 
   pihole:
-    container_name: {{ docker_project_slug }}
     image: pihole/pihole:{{ pihole_version }}
+    container_name: {{ docker_project_slug }}
+    restart: {{ docker_project_restart }}
     hostname: {{ pihole_container_hostname }}
-
-    restart: unless-stopped
 
     {% if pihole_mac_address is defined and pihole_mac_address %}
     networks:
@@ -21,7 +20,7 @@ services:
     network_mode: host
     {% endif %}
 
-    {{ docker_project_compose_service_additional_options | indent(4) }}
+    {{ docker_project_service_additional_options | indent(4) }}
 
     environment:
       - TZ={{ timezone | default('UTC', true) }}
