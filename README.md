@@ -38,6 +38,14 @@ pihole_project_name: pihole
 
 # Docker project dynamic vars (uses `docker_project_name` prefix, adapt if overridden)
 
+# Main service additional docker-compose options (ex: cpu_shares, deploy, ...)
+pihole_service_additional_options: |
+  # See https://github.com/pi-hole/docker-pi-hole#note-on-capabilities
+  #cap_add:
+  #  - NET_ADMIN # Required if you are using Pi-hole as your DHCP server, else not needed
+  #  - SYS_TIME  # Required if you are using Pi-hole as your NTP client to be able to set the host's system time
+  #  - SYS_NICE  # Optional, if Pi-hole should get some more processing time
+
 # Traefik options
 pihole_traefik_loadbalancer_server_port: 8081
 pihole_traefik_entrypoints: http,https
@@ -50,6 +58,11 @@ pihole_traefik_middlewares:
 # pihole/pihole image version
 pihole_version: latest
 
+# Default pihole user id
+pihole_uid: "{{ ansible_user_uid }}"
+# Default pihole group id
+pihole_gid: "{{ ansible_user_gid }}"
+
 # Docker default network MAC address
 # Useful when using macvlan network driver (configure network in `pihole_compose_additional_options`).
 # When not set, host networking mode will be used.
@@ -61,74 +74,73 @@ pihole_container_hostname: pi.hole
 
 # Pi-hole project variables
 
-## Recommended Variables
-
-# Admin password (WEBPASSWORD  environment variable)
+# Admin password
 pihole_webpassword: ""
 
-## Optional Variables
+# Local DNS hosts
+pihole_dns_hosts: []
+#  - 192.168.0.123 example.lan
 
-# Upstream DNS server(s) (PIHOLE_DNS_ environment variable)
-# see available DNS vars in vars/main.yml
-pihole_dns: "{{ pihole_dns_quad9 }}"
+# Local DNS CNAME records
+pihole_dns_cnameRecords: []
+#  - test.example.lan,example.lan
+#  - tmp.example.lan,example.lan,3600
 
-# DNSSEC support
-pihole_dnssec: false
-
-# Never forward reverse lookups for private ranges (DNS_BOGUS_PRIV environment variable)
-pihole_dns_bogus_priv: true
-# Never forward non-FQDNs (DNS_FQDN_REQUIRED environment variable)
-pihole_dns_fqdn_required: true
-
-# Enable DNS conditional forwarding for device name resolution (REV_SERVER environment variable)
-pihole_rev_server: false
-# If conditional forwarding is enabled, set the domain of the local network router (REV_SERVER_DOMAIN environment variable)
-pihole_rev_server_domain:
-# If conditional forwarding is enabled, set the IP of the local network router (REV_SERVER_TARGET environment variable)
-pihole_rev_server_target:
-# If conditional forwarding is enabled, set the reverse DNS zone (REV_SERVER_CIDR environment variable)
-pihole_rev_server_cidr:
-
-## Advanced Variables
-
-# Pi-hole interface (INTERFACE environment variable)
-pihole_interface:
-
-# DNSMASQ_LISTENING environment variable
-# 'local' listens on all local subnets,
-# 'all' permits listening on internet origin subnets in addition to local,
-# 'single' listens only on the interface specified.
-pihole_dnsmasq_listening: local
-
-# CORS_HOSTS environment variable
-pihole_cors_hosts: []
-
-# FTL
-pihole_ftlconf_rate_limit: 1000/60 # FTLCONF_RATE_LIMIT environment variable
-pihole_ftlconf_maxdbdays:  365     # FTLCONF_MAXDBDAYS environment variable
+# Initial adlists
+pihole_adlists_init:
+  - https://raw.githubusercontent.com/StevenBlack/hosts/master/hosts
 ```
 
-Additional config files
------------------------
+```yaml
+# Pihole environment configuration
+# See https://docs.pi-hole.net/docker/configuration/#configuring-ftl-via-the-environment
+pihole_env_config:
 
-Additional files located in `config/pihole/{{ inventory_hostname }}/` will be copied in the project main directory:
+  ## Ports to be used by the webserver.
+  FTLCONF_webserver_port: "{{ pihole_traefik_enable | default(false) | ternary(
+    pihole_traefik_loadbalancer_server_port | default(8081), 
+    '80o,443os,[::]:80o,[::]:443os') 
+  }}"
 
-- `config/pihole/all/etc-dnsmasq.d/`
-- `config/pihole/all/etc-pihole/`
-- `config/pihole/{{ inventory_hostname }}/etc-dnsmasq.d/`
-- `config/pihole/{{ inventory_hostname }}/etc-pihole/`
+  ## Upstream DNS server(s)
+  #FTLCONF_dns_upstreams: "{{ pihole_dns_quad9 }}"
 
-Ex:
-- `config/pihole/`
-  - `all/`
-    - `etc-dnsmasq.d/`
-      - `05-pihole-custom-cname.conf` (local CNAME records)
-    - `etc-pihole/`
-      - `adlists.list` (initial ad lists, not used by Pi-hole anymore)
-      - `custom.list` (local DNS configuration)
-  - `my-host/`
-    - `etc-dnsmasq.d/`
-      - `04-docker-resolving.conf` (local Dnsmasq configuration)
+  ## Never forward non-FQDNs
+  #FTLCONF_dns_domainNeeded: true # Pi-hole default: false
+
+  ## DNS conditional forwarding
+  #   format:  <enabled>,<ip-address>[/<prefix-len>],<server>[#<port>],<domain>
+  #   example: true,192.168.0.0/24,192.168.0.1#53,lan
+  #FTLCONF_dns_revServers: "false"
+
+  ## Pi-hole network interface
+  #FTLCONF_dns_interface: ""
+
+  ## Pi-hole interface listening mode
+  # "LOCAL":  Allow only local requests.
+  # "SINGLE": Permit all origins, accept only on the specified interface.
+  # "BIND":   Force FTL to really bind only the interfaces it is listening on.
+  # "ALL":    Permit all origins, accept on all interfaces.
+  # "NONE":   Do not add any configuration concerning the listening mode.
+  #FTLCONF_dns_listeningMode: "LOCAL"
+
+  ## Blocked queries will be answered with the "unspecified address" (0.0.0.0 or ::).
+  #FTLCONF_dns_blocking_mode: "NULL"
+
+  ## FTL dns.rateLimit configuration
+  #FTLCONF_dns_rateLimit_count: 1000
+  #FTLCONF_dns_rateLimit_interval: 60
+
+  ## FTL database configuration
+  #FTLCONF_database_maxDBdays: 91
+
+  ## Hourly PTR requests for server hostnames
+  # "IPV4_ONLY": Resolve only IPv4 addresses. (default)
+  # "ALL":       Resolve all addresses.
+  # "UNKNOWN":   Only resolve unknown hostnames. Already existing hostnames are never refreshed.
+  # "NONE":      Don't do any hourly PTR lookups. Llook host names up exactly once.
+  #FTLCONF_resolver_refreshNames: "IPV4_ONLY"
+```
 
 Dependencies
 ------------
@@ -139,8 +151,8 @@ This role depends on :
 Some variables allow integration with:
 - [djuuu.traefik_docker](https://github.com/Djuuu/ansible-role-traefik-docker)
 
-Example Playbook
-----------------
+Example Playbooks
+-----------------
 
 ```yaml
 - hosts: all
@@ -152,6 +164,17 @@ Example Playbook
 
   roles:
     - djuuu.pihole_docker
+```
+
+```yaml
+- hosts: all
+  gather_facts: false
+
+  tasks:
+    - name: Configure Pi-hole local DNS records
+      ansible.builtin.include_role:
+        name: djuuu.pihole_docker
+        tasks_from: configure-dns
 ```
 
 License

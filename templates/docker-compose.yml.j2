@@ -24,66 +24,21 @@ services:
 
     environment:
       - TZ={{ timezone | default('UTC', true) }}
+      - PIHOLE_UID={{ pihole_uid | default(100) }}
+      - PIHOLE_GID={{ pihole_gid | default(100) }}
+      - WEBPASSWORD_FILE=pihole_webpasswd
+      #
+      {% for item in pihole_env_config_merged | dict2items %}
+      - {{ item.key }}={{ item.value }}
+      {% endfor %}
 
-      # admin password.
-      - WEBPASSWORD={{ pihole_webpassword }}
-
-      ## Optional Variables
-
-      # Upstream DNS server(s)
-      - PIHOLE_DNS_={{ pihole_dns }}
-
-      # DNSSEC support
-      - DNSSEC={{ pihole_dnssec | default(false) }}
-
-      # Never forward reverse lookups for private ranges
-      - DNS_BOGUS_PRIV={{ pihole_dns_bogus_priv | default(true) }}
-      # Never forward non-FQDNs
-      - DNS_FQDN_REQUIRED={{ pihole_dns_fqdn_required | default(true) }}
-
-      # Enable DNS conditional forwarding for device name resolution
-      - REV_SERVER={{ pihole_rev_server | default(false) }}
-      # If conditional forwarding is enabled, set the domain of the local network router
-      - REV_SERVER_DOMAIN={{ pihole_rev_server_domain | default('') }}
-      # If conditional forwarding is enabled, set the IP of the local network router
-      - REV_SERVER_TARGET={{ pihole_rev_server_target | default('') }}
-      # If conditional forwarding is enabled, set the reverse DNS zone
-      - REV_SERVER_CIDR={{ pihole_rev_server_cidr | default('') }}
-
-      # User interface theme to use.
-      - WEBTHEME=default-auto
-      - WEBUIBOXEDLAYOUT=boxed
-
-      ## Advanced Variables
-
-      {% if pihole_interface is defined and pihole_interface %}
-      - INTERFACE={{ pihole_interface }}
-      {% endif %}
-      # local listens on all local subnets,
-      # all permits listening on internet origin subnets in addition to local,
-      # single listens only on the interface specified.
-      - DNSMASQ_LISTENING={{ pihole_dnsmasq_listening | default('single') }}
-
-      - WEB_PORT=8081
-      - CORS_HOSTS=127.0.0.1,localhost,pi.hole,{{ pihole_cors_hosts }}
-
-      # FTL
-      # blocked queries will be answered with the "unspecified address" (0.0.0.0 or ::).
-      - FTLCONF_BLOCKINGMODE=NULL
-      - FTLCONF_RATE_LIMIT={{ pihole_ftlconf_rate_limit }}
-      - FTLCONF_MAXDBDAYS={{ pihole_ftlconf_maxdbdays | default(365) }}
+    secrets:
+      - pihole_webpasswd
 
     volumes:
-
       - type: bind
         source: ./etc-pihole
         target: /etc/pihole
-        bind:
-          create_host_path: true
-
-      - type: bind
-        source: ./etc-dnsmasq.d
-        target: /etc/dnsmasq.d
         bind:
           create_host_path: true
 
@@ -92,5 +47,9 @@ services:
 
       # What's up Docker? - https://github.com/getwud/wud
       wud.watch.digest: true
+
+secrets:
+  pihole_webpasswd:
+    file: ./pihole_password
 
 {{ docker_project_compose_additional_options }}

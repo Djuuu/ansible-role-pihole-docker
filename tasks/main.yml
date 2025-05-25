@@ -1,12 +1,5 @@
 ---
 
-## Check
-
-- name: Check variables
-  ansible.builtin.assert:
-    that:
-      - pihole_container_hostname is defined
-
 ## Init
 
 - name: Ensure project directories exist
@@ -16,29 +9,17 @@
     mode: '0755'
   loop:
     - "{{ docker_project_path }}"
-    - "{{ docker_project_path }}/etc-dnsmasq.d"
-  tags: ["init"]
-
-- name: Ensure project directories exist (999)
-  ansible.builtin.file:
-    path: "{{ item }}"
-    state: directory
-    mode: '0775'
-  loop:
     - "{{ docker_project_path }}/etc-pihole"
   tags: ["init"]
 
 ## Configure
 
-- name: Configure pihole & dnsmasq
-  ansible.builtin.include_tasks: _configure.yml
-  loop:
-    - "config/pihole/all/etc-dnsmasq.d"
-    - "config/pihole/{{ inventory_hostname }}/etc-dnsmasq.d"
-    - "config/pihole/all/etc-pihole"
-    - "config/pihole/{{ inventory_hostname }}/etc-pihole"
-  loop_control:
-    loop_var: config_dir
+- name: Generate web password file
+  ansible.builtin.copy:
+    content: "{{ pihole_webpassword }}"
+    dest: "{{ docker_project_path }}/pihole_password"
+    mode: '0600'
+  no_log: true
 
 - name: Template docker-compose.yml
   ansible.builtin.template:
@@ -48,7 +29,17 @@
     validate: "{{ docker_cmd }} compose -f %s config"
     backup: true
 
+- name: Initialize adlists
+  ansible.builtin.include_tasks: _init_adlists.yml
+
 ## Run
 
 - name: Start app
   ansible.builtin.include_role: { name: djuuu.docker_project, tasks_from: compose-up }
+
+## Post-configure
+
+- name: Configure custom DNS and CNAME records
+  ansible.builtin.include_tasks: tasks/configure-dns.yml
+  when: (pihole_dns_hosts        | length > 0)
+     or (pihole_dns_cnameRecords | length > 0)

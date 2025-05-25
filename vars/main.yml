@@ -19,3 +19,57 @@ pihole_dns_quad9_unsec: 9.9.9.10;149.112.112.10;2620:fe::10;2620:fe::fe:10
 pihole_dns_quad9_ecs:   9.9.9.11;149.112.112.11;2620:fe::11;2620:fe::fe:11
 
 pihole_dns_cloudflare: 1.1.1.1;1.0.0.1;2606:4700:4700::1111;2606:4700:4700::1001
+
+
+# Pihole environment configuration
+# See https://docs.pi-hole.net/docker/configuration/#configuring-ftl-via-the-environment
+pihole_env_config_default:
+
+  ## Ports to be used by the webserver.
+  FTLCONF_webserver_port: "{{ pihole_traefik_enable | default(false) | ternary(
+    pihole_traefik_loadbalancer_server_port | default(8081),
+    '80o,443os,[::]:80o,[::]:443os')
+  }}"
+
+  ## Upstream DNS server(s)
+  #FTLCONF_dns_upstreams: "{{ pihole_dns_quad9 }}"
+
+  ## Never forward non-FQDNs
+  #FTLCONF_dns_domainNeeded: true # Pi-hole default: false
+
+  ## Pi-hole network interface
+  #FTLCONF_dns_interface: ""
+
+  ## Pi-hole interface listening mode
+  # "LOCAL":  Allow only local requests.
+  # "SINGLE": Permit all origins, accept only on the specified interface.
+  # "BIND":   Force FTL to really bind only the interfaces it is listening on.
+  # "ALL":    Permit all origins, accept on all interfaces.
+  # "NONE":   Do not add any configuration concerning the listening mode.
+  #FTLCONF_dns_listeningMode: "LOCAL"
+
+  ## DNS conditional forwarding
+  #   format:  <enabled>,<ip-address>[/<prefix-len>],<server>[#<port>],<domain>
+  #   example: true,192.168.0.0/24,192.168.0.1#53,lan
+  #FTLCONF_dns_revServers: "false"
+
+  ## Blocked queries will be answered with the "unspecified address" (0.0.0.0 or ::).
+  #FTLCONF_dns_blocking_mode: "NULL"
+
+  ## FTL dns.rateLimit configuration
+  #FTLCONF_dns_rateLimit_count: 1000
+  #FTLCONF_dns_rateLimit_interval: 60
+
+  ## Hourly PTR requests for server hostnames
+  # "IPV4_ONLY": Resolve only IPv4 addresses. (default)
+  # "ALL":       Resolve all addresses.
+  # "UNKNOWN":   Only resolve unknown hostnames. Already existing hostnames are never refreshed.
+  # "NONE":      Don't do any hourly PTR lookups. Llook host names up exactly once.
+  #FTLCONF_resolver_refreshNames: "IPV4_ONLY"
+
+  ## FTL database configuration
+  #FTLCONF_database_maxDBdays: 91
+
+
+# Merge role defaults (vars/main.yml) and user conf (defaults/main.yml + group/host/playbook vars)
+pihole_env_config_merged: "{{ pihole_env_config_default | ansible.builtin.combine(pihole_env_config) }}"

@@ -1,0 +1,37 @@
+---
+
+- name: Configure custom DNS and CNAME records
+  module_defaults:
+    ansible.builtin.command:
+      chdir: "{{ docker_project_path }}"
+  vars:
+    pihole_ftl_config: "{{ docker_cmd }} compose exec -u pihole pihole pihole-FTL --config"
+  block:
+
+    - name: Get custom DNS records
+      ansible.builtin.command: "{{ pihole_ftl_config }} dns.hosts"
+      register: _hosts_current
+      changed_when: false
+
+    - name: Configure custom DNS records
+      ansible.builtin.command: "{{ pihole_ftl_config }} dns.hosts '{{ pihole_dns_hosts | to_json }}'"
+      register: _hosts
+      changed_when: "{{ _hosts_current.stdout != _hosts.stdout }}"
+
+    - name: Show hosts configuration
+      ansible.builtin.debug:
+        msg: "{{ _hosts.stdout | regex_replace('[\\[\\]]', '') | split(',') | map('trim') }}"
+
+    - name: Get custom CNAME records
+      ansible.builtin.command: "{{ pihole_ftl_config }} dns.cnameRecords"
+      register: _cnames_current
+      changed_when: false
+
+    - name: Configure custom CNAME records
+      ansible.builtin.command: "{{ pihole_ftl_config }} dns.cnameRecords '{{ pihole_dns_cnameRecords | to_json }}'"
+      register: _cnames
+      changed_when: "{{ _cnames_current.stdout != _cnames.stdout }}"
+
+    - name: Show CNAME configuration
+      ansible.builtin.debug:
+        msg: "{{ _cnames.stdout | regex_replace('[\\[\\]]', '') | split(', ') | map('trim') }}"

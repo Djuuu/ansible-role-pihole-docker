@@ -17,6 +17,7 @@ var_naming_pattern: "^[a-z_][a-zA-Z0-9_]*$"
 # When putting ignores inside the ignore file, they are marked as ignored, but still visible, making it easier to address later.
 skip_list:
   - yaml[colons]
+  - yaml[comments]
 
 # Offline mode disables installation of requirements.yml and schema refreshing
 offline: true
