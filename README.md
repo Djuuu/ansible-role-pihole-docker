@@ -98,8 +98,8 @@ pihole_env_config:
 
   ## Ports to be used by the webserver.
   FTLCONF_webserver_port: "{{ pihole_traefik_enable | default(false) | ternary(
-    pihole_traefik_loadbalancer_server_port | default(8081), 
-    '80o,443os,[::]:80o,[::]:443os') 
+    pihole_traefik_loadbalancer_server_port | default(8081),
+    '80o,443os,[::]:80o,[::]:443os')
   }}"
 
   ## Upstream DNS server(s)
