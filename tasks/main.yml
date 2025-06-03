@@ -37,6 +37,7 @@
 
 - name: Start app
   ansible.builtin.include_role: { name: djuuu.docker_project, tasks_from: compose-up }
+  tags: ["start"]
 
 ## Post-configure
 
