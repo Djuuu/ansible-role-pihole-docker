@@ -31,6 +31,7 @@
 
 - name: Initialize adlists
   ansible.builtin.include_tasks: _init_adlists.yml
+  tags: ["configure", "configure-adlists"]
 
 ## Run
 
@@ -41,5 +42,6 @@
 
 - name: Configure custom DNS and CNAME records
   ansible.builtin.include_tasks: tasks/configure-dns.yml
+  tags: ["configure", "configure-dns"]
   when: (pihole_dns_hosts        | length > 0)
      or (pihole_dns_cnameRecords | length > 0)

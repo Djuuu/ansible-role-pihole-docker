@@ -1,15 +1,18 @@
 ---
 
-- name: Check adlists file
-  ansible.builtin.stat:
-    path: "{{ docker_project_path }}/etc-pihole/adlists.list"
-  register: adlists_file
+- name: Configure adlists
+  tags: ["configure", "configure-adlists"]
+  block:
+    - name: Check adlists file
+      ansible.builtin.stat:
+        path: "{{ docker_project_path }}/etc-pihole/adlists.list"
+      register: adlists_file
 
-- name: Initialize adlists file
-  ansible.builtin.copy:
-    content: "{{ pihole_adlists_init | join('\n') }}\n"
-    dest: "{{ docker_project_path }}/etc-pihole/adlists.list"
-    mode: '0644'
-  when:
-    - not adlists_file.stat.exists
-    - pihole_adlists_init | length > 0
+    - name: Initialize adlists file
+      ansible.builtin.copy:
+        content: "{{ pihole_adlists_init | join('\n') }}\n"
+        dest: "{{ docker_project_path }}/etc-pihole/adlists.list"
+        mode: '0644'
+      when:
+        - not adlists_file.stat.exists
+        - pihole_adlists_init | length > 0
