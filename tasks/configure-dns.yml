@@ -5,7 +5,7 @@
     ansible.builtin.command:
       chdir: "{{ docker_project_path }}"
   vars:
-    pihole_ftl_config: "{{ docker_cmd }} compose exec -u pihole pihole pihole-FTL --config"
+    pihole_ftl_config: "{{ docker_compose_cmd }} exec -u pihole pihole pihole-FTL --config"
   tags: ["configure", "configure-dns"]
   block:
 
