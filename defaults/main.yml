@@ -27,9 +27,9 @@ pihole_traefik_middlewares:
 pihole_version: latest
 
 # Default pihole user id
-pihole_uid: "{{ ansible_user_uid }}"
+pihole_uid: "{{ ansible_facts['user_uid'] }}"
 # Default pihole group id
-pihole_gid: "{{ ansible_user_gid }}"
+pihole_gid: "{{ ansible_facts['user_gid'] }}"
 
 # Docker default network MAC address
 # Useful when using macvlan network driver (configure network in `pihole_compose_additional_options`).
